@@ -1,26 +1,103 @@
-import { Injectable } from '@nestjs/common';
+import { CurrentUser } from 'src/utility/decorators/current-user.decorator';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateReviewDto } from './dto/create-review.dto';
 import { UpdateReviewDto } from './dto/update-review.dto';
+import { UserEntity } from 'src/users/entities/user.entity';
+import { InjectRepository } from '@nestjs/typeorm';
+import { ReviewEntity } from './entities/review.entity';
+import { Repository } from 'typeorm';
+import { ProductsService } from 'src/products/products.service';
 
 @Injectable()
 export class ReviewsService {
-  create(createReviewDto: CreateReviewDto) {
-    return 'This action adds a new review';
+  constructor(
+    @InjectRepository(ReviewEntity)
+    private readonly reviewRepository: Repository<ReviewEntity>,
+    private readonly productService: ProductsService,
+  ) {}
+
+  async create(
+    createReviewDto: CreateReviewDto,
+    currentUser: UserEntity,
+  ): Promise<ReviewEntity> {
+    const product = await this.productService.findOne(
+      createReviewDto.productId,
+    );
+    let review = await this.findOneByUserAndProduct(
+      currentUser.id,
+      createReviewDto.productId,
+    );
+
+    if (!review) {
+      review = this.reviewRepository.create(createReviewDto);
+      review.user = currentUser;
+      review.product = product;
+    } else {
+      review.ratings = createReviewDto.ratings;
+      review.comment = createReviewDto.comment;
+    }
+    return await this.reviewRepository.save(review);
   }
 
-  findAll() {
-    return `This action returns all reviews`;
+ async findAll() {
+    return await this.reviewRepository.find();
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} review`;
+  async findAllByProduct(id: number):Promise<ReviewEntity[]> {
+    const product = await this.productService.findOne(id);
+
+    return await this.reviewRepository.find({
+      where: { product: { id } },
+      relations: {
+        user: true,
+        product: {
+          category: true,
+        },
+      },
+    });
+  }
+
+  async findOne(id: number) {
+    const review = await this.reviewRepository.findOne({
+      where: { id },
+      relations: {
+        user: true,
+        product: {
+          category: true,
+        },
+      },
+    });
+
+    if (!review) throw new NotFoundException(`Review with id ${id} not found`);
+
+    return review;
   }
 
   update(id: number, updateReviewDto: UpdateReviewDto) {
     return `This action updates a #${id} review`;
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} review`;
+ async remove(id: number) {
+    const reviewToRemove = await this.findOne(id);
+    return this.reviewRepository.remove(reviewToRemove);
+  }
+
+  async findOneByUserAndProduct(userId: number, productId: number) {
+    return await this.reviewRepository.findOne({
+      where: {
+        user: {
+          id: userId,
+        },
+        product: {
+          id: productId,
+        },
+      },
+      relations: {
+        user: true,
+        product: {
+          category: true,
+        },
+      },
+    });
   }
 }

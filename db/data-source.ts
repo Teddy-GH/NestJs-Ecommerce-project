@@ -18,5 +18,6 @@ export const dataSourceOptions: DataSourceOptions = {
 };
 
 const dataSource = new DataSource(dataSourceOptions);
+dataSource.initialize().then(() => console.log('Database connected!'));
 
 export default dataSource;
