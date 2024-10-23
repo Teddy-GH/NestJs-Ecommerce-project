@@ -19,7 +19,9 @@ import { AuthGuard } from 'src/utility/guards/auth.guard';
 import { AuthorizeRoles} from 'src/utility/decorators/roles-decorator';
 import { AuthorizeGuard } from 'src/utility/guards/authorization.guard';
 import { Roles } from 'src/utility/common/user-roles.enum';
+import { ApiTags } from '@nestjs/swagger';
 
+@ApiTags('auth')
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}

@@ -21,7 +21,9 @@ import { UserEntity } from 'src/users/entities/user.entity';
 import { ProductEntity } from './entities/product.entity';
 import { SerializeIncludes, SerializeInterceptor } from 'src/utility/interceptors/serialize.interceptor';
 import { ProductsDto } from './dto/products.dto';
+import { ApiTags } from '@nestjs/swagger';
 
+@ApiTags('products')
 @Controller('products')
 export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
